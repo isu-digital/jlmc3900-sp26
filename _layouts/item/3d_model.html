@@ -1,0 +1,182 @@
+---
+# 3d model layout for parent + child derivative records
+# designed for rows where display_template is 3d_model and child rows are 3d_model_child
+layout: item/item-page-base
+gallery: true
+---
+{% assign children = site.data[site.metadata] | where_exp: 'item','item.parentid == page.objectid' %}
+{% assign artifact_images = children | where: 'format','image/jpeg' %}
+{% assign obj_model = children | where: 'format','model/obj' | first %}
+{% assign mtl_model = children | where: 'format','model/mtl' | first %}
+{% assign stl_model = children | where: 'format','model/stl' | first %}
+{% assign x3d_model = children | where: 'format','model/x3d' | first %}
+{% assign primary_image = page.object_location | default: page.image_small %}
+
+<div class="card mb-4 text-center">
+    <div class="card-body">
+        {% if artifact_images.size > 0 %}
+        <div class="row justify-content-center mb-2">
+            {% for child in artifact_images %}
+            <div id="{{ child.objectid }}" class="col-md-6 p-2">
+                <a class="spotlight gallery-img" data-download="true" title="{% if page.title != child.title %}{{ child.title | escape }}{% else %}{{ page.title | escape }} [{{ forloop.index }}]{% endif %}" href="{{ child.object_location | relative_url }}">
+                    <img src="{{ child.image_small | relative_url }}" alt="{{ child.image_alt_text | default: child.description | default: child.title | default: page.title | escape }}" class="img-fluid rounded">
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mb-2"><small class="text-dark">Click image to view full screen</small></div>
+        {% elsif primary_image %}
+        <div class="mb-2">
+            <a class="spotlight gallery-img" data-download="true" title="{{ page.title | escape }}" href="{{ primary_image | relative_url }}">
+                <img src="{{ page.image_small | default: primary_image | relative_url }}" alt="{{ page.image_alt_text | default: page.description | default: page.title | escape }}" class="img-fluid rounded">
+            </a>
+        </div>
+        <div class="mb-2"><small class="text-dark">Click image to view full screen</small></div>
+        {% endif %}
+
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modelModal">View 3D Model</button>
+
+        <div class="mt-2">
+            <div class="btn-group" role="group" aria-label="3D model options">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Download Files
+                </button>
+                <ul class="dropdown-menu text-start">
+                    {% if page.object_location %}<li><a target="_blank" rel="noopener" href="{{ page.object_location | relative_url }}" class="dropdown-item">{{ page.title }} {% if page.format %}({{ page.format | split: '/' | last | upcase }}){% endif %}</a></li>{% endif %}
+                    {% for child in children %}
+                    {% unless child.object_location == nil %}
+                    <li>
+                        <a target="_blank" rel="noopener" href="{{ child.object_location | relative_url }}" class="dropdown-item">
+                            {% if page.title != child.title and child.title != nil %}{{ child.title | truncatewords: 3 }}{% else %}Item {{ forloop.index }}{% endif %}
+                            {{ child.format | default: child.extension | split: '/' | last | upcase }}
+                        </a>
+                    </li>
+                    {% endunless %}
+                    {% endfor %}
+                </ul>
+
+                <a tabindex="0" role="button" class="btn btn-outline-secondary popover-dismiss" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-title="Model Download Tips" data-bs-content="3D models are available for download in three formats: OBJ, STL, and X3D. To download the STL and X3D files, simply click 'Download Files,' then click the associated file format. To download the OBJ file, click 'Download Files,' right click OBJ, click 'Save link as,' and choose a location. Follow these same steps to download the MTL and model.jpg files, which are necessary to view the OBJ model in other programs.">Tips 
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modelModal" tabindex="-1" aria-labelledby="modelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="modelModalLabel">{{ page.title }}</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="visually-hidden">3D model embed for {{ page.title }}</div>
+                <div id="modelContainer" class="h-100 rounded bg-light border overflow-hidden d-flex align-items-center justify-content-center">
+                    <p class="m-3 text-muted">Loading 3D model viewer...</p>
+                </div>
+                <p id="modelHelp" class="small text-muted mt-2 mb-0">
+                    Choose a model format below. OBJ, OBJ + MTL, and STL open in the in-page viewer; all files remain available from Download Files.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <div class="flex-grow-1 text-center">
+                    <div class="btn-group" id="modelOptionGroup" role="group" aria-label="Select 3D model type">
+                        {% if x3d_model and x3d_model.object_location %}
+                        <input type="radio" class="btn-check" name="modelOption" id="x3dModel" autocomplete="off" value="{{ x3d_model.object_location | relative_url }}" {% unless obj_model and obj_model.object_location or stl_model and stl_model.object_location %}checked{% endunless %}>
+                        <label class="btn btn-outline-primary" for="x3dModel">X3D Model</label>
+                        {% endif %}
+                        {% if obj_model and obj_model.object_location %}
+                        <input type="radio" class="btn-check" name="modelOption" id="objModel" autocomplete="off" value="{{ obj_model.object_location | relative_url }}" checked>
+                        <label class="btn btn-outline-primary" for="objModel">OBJ Model</label>
+                        {% endif %}
+                        {% if obj_model and obj_model.object_location and mtl_model and mtl_model.object_location %}
+                        <input type="radio" class="btn-check" name="modelOption" id="mtlModel" autocomplete="off" value="{{ obj_model.object_location | relative_url }},{{ mtl_model.object_location | relative_url }}{% if page.object_location %},{{ page.object_location | relative_url }}{% endif %}">
+                        <label class="btn btn-outline-primary" for="mtlModel">OBJ + MTL</label>
+                        {% endif %}
+                        {% if stl_model and stl_model.object_location %}
+                        <input type="radio" class="btn-check" name="modelOption" id="stlModel" autocomplete="off" value="{{ stl_model.object_location | relative_url }}" {% unless obj_model and obj_model.object_location or x3d_model and x3d_model.object_location %}checked{% endunless %}>
+                        <label class="btn btn-outline-primary" for="stlModel">STL Model</label>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/online-3d-viewer/build/o3dv.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var helpEl = document.getElementById('modelHelp');
+    var modelModal = document.getElementById('modelModal');
+    var viewerContainer = document.getElementById('modelContainer');
+    var optionGroup = document.getElementById('modelOptionGroup');
+    var viewerInstance = null;
+    var popoverEls = document.querySelectorAll('.popover-dismiss');
+
+    if (window.bootstrap && window.bootstrap.Popover) {
+        popoverEls.forEach(function (el) {
+            new window.bootstrap.Popover(el);
+        });
+    }
+
+    if (!optionGroup || !viewerContainer) return;
+
+    function getSelectedModelUrls() {
+        var selected = document.querySelector('input[name="modelOption"]:checked');
+        if (!selected || !selected.value) return [];
+        return selected.value.split(',').map(function (value) {
+            return value.trim();
+        }).filter(function (value) {
+            return value.length > 0;
+        });
+    }
+
+    function loadSelectedModel() {
+        var modelUrls = getSelectedModelUrls();
+        if (modelUrls.length === 0) {
+            viewerContainer.innerHTML = '<p class="m-3 text-muted">No model file was found for the selected option.</p>';
+            return;
+        }
+
+        if (!window.OV || !window.OV.EmbeddedViewer) {
+            viewerContainer.innerHTML = '<p class="m-3 text-danger">3D viewer library failed to load. Please refresh and try again.</p>';
+            return;
+        }
+
+        viewerContainer.innerHTML = '<div id="modelViewer" class="w-100 h-100"></div>';
+        var viewerDiv = document.getElementById('modelViewer');
+        viewerInstance = new window.OV.EmbeddedViewer(viewerDiv);
+        viewerInstance.LoadModelFromUrlList(modelUrls);
+    }
+
+    if (modelModal) {
+        modelModal.addEventListener('shown.bs.modal', function () {
+            loadSelectedModel();
+        });
+
+        modelModal.addEventListener('hide.bs.modal', function () {
+            if (viewerInstance && typeof viewerInstance.Destroy === 'function') {
+                viewerInstance.Destroy();
+            }
+            viewerInstance = null;
+            viewerContainer.innerHTML = '';
+        });
+    }
+
+    optionGroup.addEventListener('change', function (event) {
+        if (!event.target || event.target.name !== 'modelOption') return;
+        if (viewerInstance) {
+            viewerInstance.LoadModelFromUrlList(getSelectedModelUrls());
+        }
+        if (helpEl) {
+            helpEl.textContent = 'Selected model format loaded in viewer. Use Download Files if you want to save the source files.';
+        }
+    });
+});
+</script>
