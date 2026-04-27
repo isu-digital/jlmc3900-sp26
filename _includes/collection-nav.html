@@ -23,8 +23,10 @@
         
         <div class="collapse navbar-collapse" id="page-nav">
             <ul class="navbar-nav me-auto">
-                {%- assign navItems = site.data.config-nav | where_exp: 'item', 'item.display_name and item.dropdown_parent == nil' -%} 
-                {% for nav in navItems %}
+                {% for nav in site.data.config-nav %}
+                {% if nav.display_name and nav.display_name != "" %}
+                {% assign parent = nav.dropdown_parent | default: "" %}
+                {% if parent == "" or parent == nil %}
                 {% if nav.stub %}
                 <li class="nav-item">
                     <a class="nav-link{% if page.url == nav.stub %} active{% endif %}" {% if page.url == nav.stub %}aria-current="page" {% endif %}href="{{ nav.stub | relative_url }}">{{ nav.display_name }}</a>
@@ -40,6 +42,8 @@
                         {% endfor %}
                     </div>
                 </li>
+                {% endif %}
+                {% endif %}
                 {% endif %}
                 {%- endfor -%}
             </ul>
