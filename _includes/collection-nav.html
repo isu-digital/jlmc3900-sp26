@@ -23,17 +23,15 @@
         
         <div class="collapse navbar-collapse" id="page-nav">
             <ul class="navbar-nav me-auto">
-                {% for nav in site.data.config-nav %}
-                {% if nav.display_name and nav.display_name != "" %}
-                {% assign parent = nav.dropdown_parent | default: "" %}
-                {% if parent == "" or parent == nil %}
+                {%- assign navItems = site.data.config-nav | where_exp: 'item', 'item.display_name and item.dropdown_parent == nil' -%} 
+                {% for nav in navItems %}
                 {% if nav.stub %}
                 <li class="nav-item">
                     <a class="nav-link{% if page.url == nav.stub %} active{% endif %}" {% if page.url == nav.stub %}aria-current="page" {% endif %}href="{{ nav.stub | relative_url }}">{{ nav.display_name }}</a>
                 </li>
                 {%- else -%}
                 <li class="nav-item dropdown">
-                    {% assign navChildren = site.data.config-nav | where: 'dropdown_parent', nav.display_name %}
+                    {% assign navChildren = site.data.config-nav | where_exp: 'item', 'item.dropdown_parent == nav.display_name' %}
                     {%- assign childStubs = navChildren | map: 'stub' -%}
                     <a class="nav-link  dropdown-toggle{% if childStubs contains page.url %} active{% endif %}" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">{{ nav.display_name }}</a>
                     <div class="dropdown-menu">
@@ -42,8 +40,6 @@
                         {% endfor %}
                     </div>
                 </li>
-                {% endif %}
-                {% endif %}
                 {% endif %}
                 {%- endfor -%}
             </ul>
