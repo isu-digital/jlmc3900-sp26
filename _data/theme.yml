@@ -39,6 +39,13 @@ subjects-min: 1 # min size for subject cloud, too many terms = slow load time!
 subjects-stopwords: # set of subjects separated by ; that will be removed from display, e.g. boxers;boxing
 
 ##########
+# STUDENTS PAGE
+#
+students-fields: student_name-1;student_name-2;student_name-3;student_name-4 # set of fields separated by ; to be featured in the cloud (leave blank or comment out to not generate)
+students-min: 1 # min size for subject cloud, too many terms = slow load time!
+students-stopwords: # set of subjects separated by ; that will be removed from display, e.g. boxers;boxing
+
+##########
 # LOCATIONS PAGE
 #
 locations-fields: location # set of fields separated by ; to be featured in the cloud (leave blank or comment out to not generate)

@@ -1,7 +1,7 @@
 ---
-title: Browse
-layout: browse
-permalink: /browse.html
+title: Projects
+layout: projects
+permalink: /projects.html
 ---
 
-## Browse Items
+## Browse Projects
